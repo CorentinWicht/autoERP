@@ -1,4 +1,6 @@
-# autoERP
+# autoERP2.0
+This is an updated version of the original [autoERP](https://github.com/HugoNjb/autoERP) developed by Hugo Najberg.
+
 LNS automated Matlab scripts for pre-processing raw EEG signal into filtered epoched data (Filtering_epoching.m), performing Independent Components Analyses (ICA) (Comp_ICA.m), and computing ERPs after interpolation and artefacts rejection (ERPs.m).
 
 **⚠️ Currently only compatible with raw .bdf (BioSemi) and .set files with 64 channels**
@@ -52,11 +54,11 @@ At the end of the run, a file named Ntrials.xlsx is generated. It contains the n
 ## Dependencies
 | PLUGINS | Description |
 | ------ | ------ |
-| [EEGLAB v14.1.2b](https://github.com/sccn/eeglab) | Main software that manages most of the preprocessing and analyses toolboxes described in the table below |
+| [EEGLAB v2021.0](https://github.com/sccn/eeglab) | Main software that manages most of the preprocessing and analyses toolboxes described in the table below |
 | [BLINKER v1.1.2](http://vislab.github.io/EEG-Blinks/) | BLINKER  is an automated pipeline for detecting eye blinks in EEG and calculating various properties of these blinks | 
-| [CleanLine v1.04](https://github.com/sccn/cleanline) | This plugin adaptively estimates and removes sinusoidal (e.g. line) noise from your ICA components or scalp channels using multi-tapering and a Thompson F-statistic |
-| [Clean_rawdata v2](https://github.com/sccn/clean_rawdata)| This plugin is used solely for the vis_artifacts.m function for the ICA script |
-|[ICLabel v1.1](https://github.com/sccn/ICLabel)|An automatic EEG independent component classifer plugin |
+| [CleanLine v2.0](https://github.com/sccn/cleanline) | This plugin adaptively estimates and removes sinusoidal (e.g. line) noise from your ICA components or scalp channels using multi-tapering and a Thompson F-statistic |
+| [Clean_rawdata v2.3](https://github.com/sccn/clean_rawdata)| This plugin is used solely for the vis_artifacts.m function for the ICA script |
+|[ICLabel v1.3](https://github.com/sccn/ICLabel)|An automatic EEG independent component classifer plugin |
 |[EEGInterp](https://d-nb.info/1175873608/34)| Homemade function to compute multiquadric interpolation based on radial basis function |
 
 Isolated functions:
@@ -64,6 +66,11 @@ Isolated functions:
 * [natsort](https://ch.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
 
 The dependencies are already included in the Functions folder and loaded automatically.
+
+## Changes from autoERP to autoERP2.0
+1. EEGLAB and its plugins have been updated and any compatibility issue has been addressed. 
+2. The to-be-interpolated electrodes are now removed before running CleanLine and ASR pre-processing algorithms (to avoid injecting high-amplitude noise and compromising the algorithms efficiency).
+3. The GUI offers the possibility to define boundary triggers (e.g. Beginning and End) to remove portions of the EEG recording which may be useless (e.g. break between blocks of trials). Again, the principle is to avoid injecting noisy data (e.g. muscle movements) into the pre-processing algorithms.
 
 ## Authors
 [**Hugo Najberg**](https://www3.unifr.ch/med/spierer/en/group/team/people/194247/8d66b)\
@@ -79,8 +86,8 @@ The dependencies are already included in the Functions folder and loaded automat
 *University of Fribourg, Switzerland*
 
 ## Cite the repository
-H. Najberg, C.A. Wicht, autoERP, (2020), GitHub repository https://github.com/HugoNjb/autoERP \
-[![DOI](https://zenodo.org/badge/223942151.svg)](https://zenodo.org/badge/latestdoi/223942151)
+C.A. Wicht, H. Najberg,, autoERP2.0, (2021), GitHub repository https://github.com/HugoNjb/autoERP \
+[![DOI] XXX NEED TO CREATE A DOI! 
 
 ## License
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
