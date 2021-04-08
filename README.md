@@ -35,7 +35,7 @@ You can write in it the bad channels that will have to be interpolated and load 
 **Do not erase the first example line of the to_interpolate.xlsx file.**
 
 
-### 2) comp_ICA.m (optionnal)
+### 2) comp_ICA.m (optional)
 This script will automatically computed ICA on all the loaded files and will prompt the user to select the components that should be rejected for each of the files. 
 The components rejection graphical interface is based on the [ICLabel](https://sccn.ucsd.edu/wiki/ICLabel) display. 
 
