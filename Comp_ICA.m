@@ -120,8 +120,8 @@ if strcmpi(PromptICA,'YES') && strcmpi(PromptICAAlgo, 'AMICA')
             if ~exist([p2 '\Mpich2_1.4\mpich2-1.4-win-x86-64.msi'],'file')
                 try
                     % Downloading Mpich2 and storing in folder
-                    urlwrite('http://www.mpich.org/static/downloads/1.4/mpich2-1.4-win-x86-64.msi',...
-                        [p2 '\Mpich2_1.4\mpich2-1.4-win-x86-64.msi']);
+                    websave([p2 '\Mpich2_1.4\mpich2-1.4-win-x86-64.msi'],...
+                        'http://www.mpich.org/static/downloads/1.4/mpich2-1.4-win-x86-64.msi')
                 catch
                     sprintf('ERROR when reading the Mpich2 web certificate. Please restart MATLAB as administrator (right button click)')
                 end
@@ -133,8 +133,8 @@ if strcmpi(PromptICA,'YES') && strcmpi(PromptICAAlgo, 'AMICA')
             if ~exist([p2 '\Mpich2_1.4\mpich2-1.4-win-ia32.msi'],'file')   
                 try
                     % Downloading Mpich2 and storing in folder
-                    urlwrite('http://www.mpich.org/static/downloads/1.4/mpich2-1.4-win-ia32.msi',...
-                        [p2 '\Mpich2_1.4\mpich2-1.4-win-ia32.msi'])
+                    websave([p2 '\Mpich2_1.4\mpich2-1.4-win-ia32.msi'],...
+                        'http://www.mpich.org/static/downloads/1.4/mpich2-1.4-win-ia32.msi')
                 catch
                     sprintf('ERROR when reading the Mpich2 web certificate. Please restart MATLAB as administrator (right button click)')
                 end
@@ -357,7 +357,6 @@ for Count = 1:numel(FolderList)
             % EEG = average_ref(EEG,EEG.chaninfo.nodatchans);
 
             % Computing automated dipole fitting
-            % NEED TO REDO IT IN GUI W/ DIPFIT 3.0 now ! 
             EEG=Automated_DipfitNEW(EEG);
             % close gcf
 
@@ -412,9 +411,9 @@ for Count = 1:numel(FolderList)
                 end
 
                 % Matrix to integrate in the following uitable
-                Response = repmat({false},[size(EEG.icaact,1) 1]);
-                Response(CompsToRej{Count})={true};
-                to_display = [num2cell(1:size(EEG.icaact,1))', Response];
+                CompList = repmat({false},[size(EEG.icaact,1) 1]);
+                CompList(CompsToRej{Count})={true};
+                to_display = [num2cell(1:size(EEG.icaact,1))', CompList];
 
                 % Select components to reject
                 Screensize = get( groot, 'Screensize' );
@@ -432,11 +431,11 @@ for Count = 1:numel(FolderList)
                 waitfor(p)
 
                 % Saving the changes
-                if ~isempty(CompList)
-                    CompsToRej = find(cell2mat(CompList(:,2))~=0)';
-                    RemainPfav = sum(PVaf)-sum(PVaf(CompsToRej));
+                if nnz(cell2mat(CompList))>0
+                    CompsToRej{Count} = find(cell2mat(CompList)~=0)';
+                    RemainPfav = sum(PVaf)-sum(PVaf(CompsToRej{Count}));
                 else
-                    CompsToRej = find(cell2mat(Response)==1)';
+                    CompsToRej{Count} = find(cell2mat(Response)==1)';
                 end
 
                 % close all figures
@@ -452,7 +451,7 @@ for Count = 1:numel(FolderList)
                     try
                         vis_artifacts(TEMPEEG,EEG);    
                     catch
-                       eegplot(EEG, 'data2',TEMPEEG, 'color','off') 
+                       eegplot(EEG.data, 'data2',TEMPEEG.data, 'color','off') 
                     end
 
                     % Wait Bar 

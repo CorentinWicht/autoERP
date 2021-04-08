@@ -42,6 +42,11 @@
 
 % Hugo Najberg (script, protocol)
 % Corentin Wicht (script, protocol)
+% Michael Mouthon (protocol)
+% Lucas Spierer (protocol)
+
+% If you have questions or want to contribute to this pipeline, feel free 
+% to contact hugo.najberg@unifr.ch
 
 %% --------------------- PRESS F5 -------------------- %%
 %% --------------------------------------------------- %%
@@ -58,24 +63,22 @@ p2 = p(1:I_p(end)-1);
 % ---------- SET PATHS
 % Path of all needed functions
 addpath(strcat(p2,'\Functions\Functions'));
-addpath(strcat(p2,'\Functions\eeglab14_1_2b'));
+% addpath(strcat(p2,'\Functions\eeglab14_1_2b'));
+addpath(strcat(p2,'\Functions\eeglab2021.0'));
 addpath(genpath(strcat(p2,'\Functions\EEGInterp')));
 
 % ---------- PROMPTS
 % Merging and interpolation decision
 answer = inputdlg({'Do you want to merge datasets ?','Do you already have averaging parameters ?',...
-    'Do you want to interpolate channels for specific subject ?','Do you already have interpolation parameters ?',...
     'Do you want to save average referenced ERPs','Do you want to save ERPs referenced to Cz',['Do you want to save non-averaged epoched data ?'...
     newline '(Required for time-frequency analyses)']},...
-    'Settings',1,{'Y','N','N','N','Y','Y','N'});
+    'Settings',1,{'y','n','y','y','n'});
 
 merge_ans = upper(answer{1});
 averaging_ans = upper(answer{2});
-interpolation_ans   = upper(answer{3});
-interpolation_param = upper(answer{4});
-save_avgref = upper(answer{5});
-save_refCz  = upper(answer{6});
-save_nonavg = upper(answer{7});
+save_avgref = upper(answer{3});
+save_refCz  = upper(answer{4});
+save_nonavg = upper(answer{5});
 
 
 % Suffixes and parameters
@@ -279,122 +282,135 @@ end
 
 %% Bad Channels Table
 
-SbjList = '';
-
-if interpolation_ans == 'Y'
-    
+SbjList = {}; InterpSbj = 1;
+% 
+% if interpolation_ans == 'Y'
+%     
     % Create a variable with all the channels information
-    rowname = [{'Fp1(1)'},{'AF7(2)'},{'AF3(3)'},{'F1(4)'},{'F3(5)'},{'F5(6)'},{'F7(7)'},...
-        {'FT7(8)'},{'FC5(9)'},{'FC3(10)'},{'FC1(11)'},{'C1(12)'},{'C3(13)'},{'C5(14)'},...
-        {'T7(15)'},{'TP7(16)'},{'CP5(17)'},{'CP3(18)'},{'CP1(19)'},{'P1(20)'},{'P3(21)'},...
-        {'P5(22)'},{'P7(23)'},{'P9(24)'},{'PO7(25)'},{'PO3(26)'},{'O1(27)'},{'Iz(28)'},...
-        {'Oz(29)'},{'POz(30)'},{'Pz(31)'},{'CPz(32)'},{'Fpz(33)'},{'Fp2(34)'},{'AF8(35)'},...
-        {'AF4(36)'},{'AFz(37)'},{'Fz(38)'},{'F2(39)'},{'F4(40)'},{'F6(41)'},{'F8(42)'},...
-        {'FT8(43)'},{'FC6(44)'},{'FC4(45)'},{'FC2(46)'},{'FCz(47)'},{'Cz(48)'},{'C2(49)'},{'C4(50)'},...
-        {'C6(51)'},{'T8(52)'},{'TP8(53)'},{'CP6(54)'},{'CP4(55)'},{'CP2(56)'},{'P2(57)'},...
-        {'P4(58)'},{'P6(59)'},{'P8(60)'},{'P10(61)'},{'PO8(62)'},{'PO4(63)'},{'O2(64)'}];
-
-    % Removing the '(n)' after the chan label 
-    Index = strfind(rowname,'(');
-    rowname_nonumb = cellfun(@(x,idx) x(1:idx-1),rowname,Index,'UniformOutput',false);
-
-        
-    if interpolation_param ~= 'Y'
-                            
-        %% Manually enter the channels
-        AllNames = unique({FileList.folder});
-        to_display={};
-
-        % Removing the consistant path
-        for x = 1:length(AllNames)
-            temp = AllNames{x};
-            to_display{x} = temp(length(root_folder)+2:end);
-        end
-
-        to_display = [natsort(to_display)', repmat({false},[size(AllNames,2) 1])];
-
-        % Select folders on which to specify Bad Channels from
-        f = figure('Position', [500 300 380 420]);
-        p=uitable('Parent', f,'Data',to_display,'ColumnEdit',[false true],'ColumnName',...
-            {'Folders', 'Bad Channels ?'},'CellEditCallBack','SbjList_I = get(gco,''Data'');');
-        uicontrol('Style', 'text', 'Position', [20 325 200 50], 'String',...
-                {'Folder selection for Bad Channels.','Click on the box of the participants folder you want to specify bad channels from.'});
-
-        % Wait for p to close until running the rest of the script
-        waitfor(p)
-
-        % Retrieve the selected folder  
-        SbjList = SbjList_I(cell2mat(SbjList_I(:,2)),1);        
-
-        %% Asking the bad channels for each subject
-        if ~isempty(SbjList)            
-
-            figure('Position', [500 300 380 420]);
-            t = uitable('Data',repmat({false},[63 length(SbjList)]),'ColumnEditable',true(1,length(SbjList)),...
-                'Rowname',rowname,'ColumnName',SbjList,'CellEditCallBack','BadChannels = get(gco,''Data'');');
-            uicontrol('Style', 'text', 'Position', [20 325 200 50], 'String',{'Enter the bad channels','Cz does not appear as it is taken as reference.'});
-
-            % Wait for t to close until running the rest of the script
-            waitfor(t)
-
-            % Changing the Bad Channels logical arrays into the corresponding row names
-            for x = 1:length(SbjList)       
-                BadChanLabels_log{x} = rowname([BadChannels{:,x}]);  
-                BadChanLabels{x} = rowname_nonumb([BadChannels{:,x}]);               
-            end
-
-            %% saving the epoching parameters into a structure
-
-            BadChannels_Parameters.Sbj = SbjList;
-            BadChannels_Parameters.Channels = BadChanLabels;
-
-            uisave('BadChannels_Parameters',[load_folder '\BadChannels_Parameters.mat'])
-        end
-        
-    % If already setup parameters
-    else        
-        % Choose the file
-        [f_BadChannels,p_BadChannels] = uigetfile({'*.*';'*.csv';'*.mat'},...
-            'Select the .csv or .mat file containing the Bad Channels',load_folder);
-        name_f_BadChannels = [p_BadChannels,f_BadChannels];
-        extension_param = split(f_BadChannels,'.');
-        extension_param = extension_param{end};
-        
-        %% Read csv Bad channels file
-        % If a folder with interp parameters exist
-        switch extension_param
-            case 'csv'            
-                % Load it and convert it to cells
-                T_BadChannels = readtable([p_BadChannels f_BadChannels],'Delimiter',';','HeaderLines',2);
-                T_BadChannels = table2cell(T_BadChannels);
-
-                % Remove empty col
-                idx = all(cellfun(@isempty,T_BadChannels),1);
-                T_BadChannels(:,idx) = [];
-
-                % Remove empty rows
-                idx = all(cellfun(@isnan,T_BadChannels(:,2:end)),2);
-                T_BadChannels(idx,:) = [];
-
-                % Variable attribution to SbjList
-                SbjList = T_BadChannels(:,1);
-
-                % Variable attribution to BadChanLabels
-                for chan = 1:length(SbjList) % for each non-empty row
-                    temp = [T_BadChannels{chan,2:end}]; % take the values
-                    temp = temp(~isnan(temp)); % remove the nan
-                    BadChanLabels_log{chan} = rowname(temp); % replace them by labels
-                    BadChanLabels{chan} = rowname_nonumb(temp);               
-                end    
-                
-            case 'mat'
-                % Open the parameters.mat
-                open(name_f_BadChannels)
-                SbjList = BadChannels_Parameters.Sbj;
-                BadChanLabels = BadChannels_Parameters.Channels;
-        end
-    end
-end
+rowname = [{'Fp1(1)'},{'AF7(2)'},{'AF3(3)'},{'F1(4)'},{'F3(5)'},{'F5(6)'},{'F7(7)'},...
+    {'FT7(8)'},{'FC5(9)'},{'FC3(10)'},{'FC1(11)'},{'C1(12)'},{'C3(13)'},{'C5(14)'},...
+    {'T7(15)'},{'TP7(16)'},{'CP5(17 )'},{'CP3(18)'},{'CP1(19)'},{'P1(20)'},{'P3(21)'},...
+    {'P5(22)'},{'P7(23)'},{'P9(24)'},{'PO7(25)'},{'PO3(26)'},{'O1(27)'},{'Iz(28)'},...
+    {'Oz(29)'},{'POz(30)'},{'Pz(31)'},{'CPz(32)'},{'Fpz(33)'},{'Fp2(34)'},{'AF8(35)'},...
+    {'AF4(36)'},{'AFz(37)'},{'Fz(38)'},{'F2(39)'},{'F4(40)'},{'F6(41)'},{'F8(42)'},...
+    {'FT8(43)'},{'FC6(44)'},{'FC4(45)'},{'FC2(46)'},{'FCz(47)'},{'Cz(48)'},{'C2(49)'},{'C4(50)'},...
+    {'C6(51)'},{'T8(52)'},{'TP8(53)'},{'CP6(54)'},{'CP4(55)'},{'CP2(56)'},{'P2(57)'},...
+    {'P4(58)'},{'P6(59)'},{'P8(60)'},{'P10(61)'},{'PO8(62)'},{'PO4(63)'},{'O2(64)'}];
+% 
+%     % Removing the '(n)' after the chan label 
+%     Index = strfind(rowname,'(');
+%     rowname_nonumb = cellfun(@(x,idx) x(1:idx-1),rowname,Index,'UniformOutput',false);
+% 
+%         
+%     if interpolation_param ~= 'Y'
+%                             
+%         %% Manually enter the channels
+%         AllNames = unique({FileList.folder});
+%         to_display={};
+% 
+%         % Removing the consistant path
+%         for x = 1:length(AllNames)
+%             temp = AllNames{x};
+%             to_display{x} = temp(length(root_folder)+2:end);
+%         end
+% 
+%         to_display = [natsort(to_display)', repmat({false},[size(AllNames,2) 1])];
+% 
+%         % Select folders on which to specify Bad Channels from
+%         f = figure('Position', [500 300 380 420]);
+%         p=uitable('Parent', f,'Data',to_display,'ColumnEdit',[false true],'ColumnName',...
+%             {'Folders', 'Bad Channels ?'},'CellEditCallBack','SbjList_I = get(gco,''Data'');');
+%         uicontrol('Style', 'text', 'Position', [20 325 200 50], 'String',...
+%                 {'Folder selection for Bad Channels.','Click on the box of the participants folder you want to specify bad channels from.'});
+% 
+%         % Wait for p to close until running the rest of the script
+%         waitfor(p)
+% 
+%         % Retrieve the selected folder  
+%         SbjList = SbjList_I(cell2mat(SbjList_I(:,2)),1);        
+% 
+%         %% Asking the bad channels for each subject
+%         if ~isempty(SbjList)            
+% 
+%             figure('Position', [500 300 380 420]);
+%             t = uitable('Data',repmat({false},[63 length(SbjList)]),'ColumnEditable',true(1,length(SbjList)),...
+%                 'Rowname',rowname,'ColumnName',SbjList,'CellEditCallBack','BadChannels = get(gco,''Data'');');
+%             uicontrol('Style', 'text', 'Position', [20 325 200 50], 'String',{'Enter the bad channels','Cz does not appear as it is taken as reference.'});
+% 
+%             % Wait for t to close until running the rest of the script
+%             waitfor(t)
+% 
+%             % Changing the Bad Channels logical arrays into the corresponding row names
+%             for x = 1:length(SbjList)       
+%                 BadChanLabels_log{x} = rowname([BadChannels{:,x}]);  
+%                 BadChanLabels{x} = rowname_nonumb([BadChannels{:,x}]);               
+%             end
+% 
+%             %% saving the epoching parameters into a structure
+% 
+%             BadChannels_Parameters.Sbj = SbjList;
+%             BadChannels_Parameters.Channels = BadChanLabels;
+% 
+%             uisave('BadChannels_Parameters',[load_folder '\BadChannels_Parameters.mat'])
+%         end
+%         
+%     % If already setup parameters
+%     else        
+%         % Choose the file
+%         [f_BadChannels,p_BadChannels] = uigetfile({'*.*';'*.csv';'*.mat'},...
+%             'Select the .csv or .mat file containing the Bad Channels',load_folder);
+%         name_f_BadChannels = [p_BadChannels,f_BadChannels];
+%         extension_param = split(f_BadChannels,'.');
+%         extension_param = extension_param{end};
+%         
+%         %% Read csv Bad channels file
+%         % If a folder with interp parameters exist
+%         switch extension_param
+%             case 'csv'            
+%                 % Load it and convert it to cells
+%                 T_BadChannels = readtable([p_BadChannels f_BadChannels],'Delimiter',';','HeaderLines',2);
+%                 T_BadChannels = table2cell(T_BadChannels);
+% 
+%                 % Remove empty col
+%                 idx = all(cellfun(@isempty,T_BadChannels),1);
+%                 T_BadChannels(:,idx) = [];
+% 
+%                 % If electrodes labels are letters convert them to numbers
+%                 if ischar(T_BadChannels{1,2})
+%                     NumT_BadChannels = [T_BadChannels(:,1) repmat({NaN},size(T_BadChannels(:,2:end)))];
+%                     for m=1:size(T_BadChannels(:,2:end),1)
+%                         for n=1:size(T_BadChannels(:,2:end),2)
+%                             if ~isempty(T_BadChannels{m,n+1})
+%                                 NumT_BadChannels{m,n+1} = find(ismember(rowname_nonumb,T_BadChannels(m,n+1)));
+%                             end
+%                         end
+%                     end
+%                     T_BadChannels = NumT_BadChannels;
+%                 end
+%                 
+%                 % Remove empty rows
+%                 idx = all(cellfun(@isnan,T_BadChannels(:,2:end)),2);
+%                 T_BadChannels(idx,:) = [];
+% 
+%                 % Variable attribution to SbjList
+%                 SbjList = T_BadChannels(:,1);
+% 
+%                 % Variable attribution to BadChanLabels
+%                 for chan = 1:length(SbjList) % for each non-empty row
+%                     temp = [T_BadChannels{chan,2:end}]; % take the values
+%                     temp = temp(~isnan(temp)); % remove the nan
+%                     BadChanLabels_log{chan} = rowname(temp); % replace them by labels
+%                     BadChanLabels{chan} = rowname_nonumb(temp);               
+%                 end    
+%                 
+%             case 'mat'
+%                 % Open the parameters.mat
+%                 open(name_f_BadChannels)
+%                 SbjList = BadChannels_Parameters.Sbj;
+%                 BadChanLabels = BadChannels_Parameters.Channels;
+%         end
+%     end
+% end
 
 %% eeglab
 
@@ -406,8 +422,8 @@ pop_editoptions('option_single', 0);
 time_start = datestr(now);
 
 % Supercomputer slash inversion and remove spaces
-SbjList = strrep(SbjList,'/','\');
-SbjList = deblank(SbjList);
+% SbjList = strrep(SbjList,'/','\');
+% SbjList = deblank(SbjList);
 
 %% For each file and condition, we load and merge datasets
 
@@ -447,7 +463,6 @@ for sbj = 1:sbj_high
     if merge_ans == "Y"
         
         % Test for recursive condition name
-        error_condname = 0;
         for test_cond = 1:size(CondList,1)   
             error_condname(test_cond) = sum(contains(CondList,CondList{test_cond}));
         end
@@ -505,12 +520,12 @@ for sbj = 1:sbj_high
                     sbj_count = sbj_count +1;
                     
                     % Load the dataset
-                    EEG = pop_loadset('filename',same_cond,'filepath',FolderName);                    
+                    EEG = pop_loadset('filename',same_cond,'filepath',FolderName);
                     
                     % If more than two files for one condition in the same 
                     % condition, merge them together
                     if length(same_cond) > 1
-                        [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0);
+                        [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0); 
                         ALLEEG = eeg_checkset(ALLEEG, 'makeur'); % making sure event and urevent are identical
                         EEG = pop_mergeset( ALLEEG, 1:length(ALLEEG));
                         EEG.cond_name = CondList{cond};
@@ -535,10 +550,9 @@ for sbj = 1:sbj_high
             waitbar(sbj/sbj_high,h,{['Merging: ' name_h] , ['Progress: ' num2str(sbj) '/' num2str(sbj_high)]})
         
             % Merging the whole folder
-            EEG = pop_loadset('filename',same_session,'filepath',FolderName); % may be redundant with pop_newset
-        
+            EEG = pop_loadset('filename',same_session,'filepath',FolderName);
             [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0); 
-            ALLEEG = eeg_checkset(ALLEEG, 'makeur');  % making sure event and urevent are identical
+            ALLEEG = eeg_checkset(ALLEEG, 'makeur'); % making sure event and urevent are identical 
             EEG = pop_mergeset( ALLEEG, 1:length(ALLEEG), 0);
             
             % Everything in one variable
@@ -553,7 +567,7 @@ for sbj = 1:sbj_high
         waitbar(sbj/sbj_high,h,{['Loading: ' name_h],['Progress: ' num2str(sbj) '/' num2str(sbj_high)]})
         
         % Loading each file
-        EEG = pop_loadset('filename',FileList(sbj).name,'filepath',FileList(sbj).folder);
+        EEG = pop_loadset('filename',FileList(sbj).name,'filepath',FileList(sbj).folder); % may be redundant with pop_newset
         
         % If Conditions are specified, 
         if ~isempty(CondList)
@@ -585,8 +599,6 @@ for sbj = 1:sbj_high
         end
     end
 
-
-
     %% For each loaded/merged dataset
     
     % It's waitbar time !
@@ -608,25 +620,50 @@ for sbj = 1:sbj_high
         
         %% Bad channels if the subject is in SbjList
 
-        to_inspect = 1:EEG.nbchan;
+%         to_inspect = 1:EEG.nbchan;
         Interpolation = 0;
         
-        if contains(name_session,SbjList) && ~isempty(SbjList)       
+%         if contains(name_session,SbjList) && ~isempty(SbjList)       
+%             
+%             % Need to interpolate later ?
+%             Interpolation = 1;
+% 
+%             % Bad Channels associated to this subject
+%             I_sbj = find(strcmp(name_session,SbjList));
+%             EEG.BadChan = BadChanLabels{I_sbj};
+%             to_ignore = [];
+% 
+%             % Transforming the channels name in eeglab chan num
+%             for x = 1:length(EEG.BadChan)
+%                 to_ignore(x) = find(ismember(upper({EEG.chanlocs.labels}),upper(EEG.BadChan(x))));
+%             end
+% 
+%             to_inspect(to_ignore) = [];
+%         end
+
+        if isfield(EEG,'BadChans')    
             
             % Need to interpolate later ?
             Interpolation = 1;
 
             % Bad Channels associated to this subject
-            I_sbj = find(strcmp(name_session,SbjList));
-            EEG.BadChan = BadChanLabels{I_sbj};
-            to_ignore = [];
+            to_interp = EEG.BadChans.InterpChans;
+                     
+            % Store rejected/interp channels for the log
+            BadChanLabels_log{InterpSbj} = rowname(to_interp);
+            InterpSbj = InterpSbj + 1;
 
-            % Transforming the channels name in eeglab chan num
-            for x = 1:length(EEG.BadChan)
-                to_ignore(x) = find(ismember(upper({EEG.chanlocs.labels}),upper(EEG.BadChan(x))));
+            % Channels on which to apply 80mv threshold
+%             to_inspect(to_interp) = [];
+            
+            % Store list of subjects with interpolation
+            FileName = FileList(sbj).name(1:end-length(extension));
+            if strcmp(FileName(end),'_') % removing ending character
+                SbjList=[SbjList {FileName(1:end-1)}];
+            else
+                SbjList=[SbjList {FileName}];
             end
-
-            to_inspect(to_ignore) = [];
+            
         end
        
         %% Deleting epochs based on allERPtriggList
@@ -641,7 +678,7 @@ for sbj = 1:sbj_high
         unique_types = unique({EEG.event.type});
 
         % counter
-        counter_ERP = 0;
+        counter_ERP = 0; event_epochs = [];
 
         % If types isn't empty
         if ~isempty(types)
@@ -669,8 +706,11 @@ for sbj = 1:sbj_high
                     counter_ERP = counter_ERP +1;
 
                     % Creating our new EEG structure containing only the selected trials
-                    allERPs{counter_ERP} = pop_selectevent( EEG,'type',corr_types,'deleteevents','on');
-
+                    [allERPs{counter_ERP}, event_TEMP] = pop_selectevent(EEG,'type',corr_types,'deleteevents','on');
+                    
+                    % Find epochs corresponding to each event
+                    event_epochs{counter_ERP} = {EEG.event(event_TEMP).epoch}; 
+                    
                     % If there are more than one, join them in a string
                     if length(corr_types) > 1
                         allERPs{counter_ERP}.keptevents = cell2mat(join(corr_types,'_'));
@@ -702,22 +742,47 @@ for sbj = 1:sbj_high
         for x = 1:length(allERPs)
             
             EEG = allERPs{x};
-            
+                                      
+            % Only keeping the select events in the Badchannels data
+            Current_event_epochs = sort(cell2mat(event_epochs{x}));
+            if isfield(EEG,'BadChans')
+                EEG.BadChans.data = EEG.BadChans.data(:,:,Current_event_epochs);
+            end
             % total event before everything is rejected [to store]
             n_trials(x) = size(EEG.data,3); 
             
             %% Interpolation
             if Interpolation
                 
+                % Reintroduce the bad channels data 
+                Temp = zeros(EEG.BadChans.nbchan,size(EEG.data,2),size(EEG.data,3)); PosGood = 1; PosBad = 1; 
+                for m=1:EEG.BadChans.nbchan
+                    if ~ismember(m,EEG.BadChans.InterpChans) 
+                       Temp(m,:,:) = EEG.data(PosGood,:,:); PosGood = PosGood + 1;
+                    else
+                       % Restricting channel data length since EEG.data
+                       % size might have changed with artifact rejection
+                        Temp(m,:,:) = EEG.BadChans.data(PosBad,:,:);PosBad = PosBad + 1;
+
+                       % Filling in the missing channel data with zeros (Is this correct?!)
+                       %Temp(m,:,:) = zeros(1,size(EEG.data,2),size(EEG.data,3));PosBad = PosBad + 1;
+                    end
+                end
+                
+                % Adjust the EEG structure
+                EEG.data = Temp; EEG.chanlocs = EEG.BadChans.chanlocs;
+                EEG.nbchan = EEG.BadChans.nbchan;
+                EEG = eeg_checkset(EEG);
+                
                 % Multiquadratics (BEST ONE SO FAR)
-                EEG.data = EEGinterp('MQ',0.05,EEG,to_ignore);
+                EEG.data = EEGinterp('MQ',0.05,EEG,to_interp);
             end
             
             %%   
             if ~isnan(thr_uV)
                 
                 %% Artefact Rejection
-                [EEG,Index] = pop_eegthresh(EEG,1,to_inspect,-thr_uV,thr_uV,min(EEG.times)/1000,max(EEG.times)/1000,0,1);
+                [EEG,Index] = pop_eegthresh(EEG,1,1:EEG.nbchan,-thr_uV,thr_uV,min(EEG.times)/1000,max(EEG.times)/1000,0,1);
                 EEG.rej_trials = Index;
 
                 % How many trials are removed in percent [to store]
@@ -776,7 +841,7 @@ for sbj = 1:sbj_high
             % Duplicating the EEG structure to keep a save file
             EEG_epoched = EEG;
             
-            %% Averaging and Re-referencing
+            %% Averaging, Interpolation and Re-referencing
             
             % Averaging the data on the third dim
             EEG.data = mean(EEG.data,3);
@@ -941,7 +1006,7 @@ end
 
 % Interpolation
 fprintf(fid,'\r\n%s\r\n','------ Interpolation parameters ------');
-if interpolation_ans == 'Y'
+if exist('BadChanLabels_log','var')
     fprintf(fid,'%s\r\n',['Bad Channels were selected for ' num2str(length(SbjList)) ' sessions:'] );
     for sbj = 1:length(SbjList)
        fprintf(fid,'%s - ',SbjList{sbj}); 
@@ -979,3 +1044,5 @@ if any(Rem_80uV_p == 100)
         "On these file(s), the rejection step was ignored.";...
         "Check the Ntrials excel file."})
 end
+
+disp('done');
