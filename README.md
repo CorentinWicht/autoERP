@@ -81,14 +81,14 @@ The dependencies are already included in the Functions folder and loaded automat
 *[Laboratory for Neurorehabilitation Science](https://www3.unifr.ch/med/spierer/en/)*\
 *University of Fribourg, Switzerland*
 
-[**Corentin Wicht**](https://www.researchgate.net/profile/Wicht_Corentin)\
+[**Corentin Aurèle Wicht**](https://www.researchgate.net/profile/Wicht_Corentin)\
 *SNSF Doc.CH PhD student*\
 *corentin.wicht@unifr.ch, corentinw.lcns@gmail.com*\
 *[Laboratory for Neurorehabilitation Science](https://www3.unifr.ch/med/spierer/en/)*\
 *University of Fribourg, Switzerland*
 
 ## Cite the repository
-C.A. Wicht, H. Najberg,, autoERP2.0, (2021), GitHub repository https://github.com/HugoNjb/autoERP \
+C.A. Wicht, H. Najberg, autoERP2.0, (2021), GitHub repository https://github.com/CorentinWicht/autoERP2.0 \
 [![DOI] XXX NEED TO CREATE A DOI! 
 
 ## License
