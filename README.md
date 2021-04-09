@@ -6,7 +6,7 @@ This is an updated version of the original [autoERP](https://github.com/HugoNjb/
 2. The to-be-interpolated electrodes are now removed before running CleanLine and ASR pre-processing algorithms (to avoid injecting high-amplitude noise and compromising the algorithms efficiency).
 3. The GUI offers the possibility to define boundary triggers (Beginning and End of files) to remove portions of the EEG recording (outside these boundaries) which may be useless (e.g. break between blocks of trials). Again, the idea is to avoid injecting noisy data (e.g. muscle movements) into the pre-processing algorithms.
 
-All the changes were also reported in the **[Wiki user manual](https://github.com/CorentinWicht/autoERP2.0/wiki)**.
+All the changes were reported in the **[Wiki user manual](https://github.com/CorentinWicht/autoERP2.0/wiki)**.
 
 ## Description:
 LNS automated Matlab scripts for pre-processing raw EEG signal into filtered epoched data (Filtering_epoching.m), performing Independent Components Analyses (ICA) (Comp_ICA.m), and computing ERPs after interpolation and artefacts rejection (ERPs.m).
