@@ -65,7 +65,7 @@ PromptInstructions = {'Enter the suffix and extension of your data (.bdf or XXX.
     ['OPTIONAL:',newline,'You have the possibility to use boundary triggers to exclude portion of the recordings outside these boundaries.',...
     newline,'If you want to set boundary triggers, separate them by a semi-colon (";"), otherwise leave empty!']};
 
-PromptValues = {'.bdf','filtered','0.5','40','epoched','-100 700','1024','64','','254;255'};
+PromptValues = {'.bdf','filtered','0.5','40','epoched','-100 700','1024','64','',''};
 
 
 % Optionnal algorithms decision
