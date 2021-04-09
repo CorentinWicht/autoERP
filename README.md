@@ -1,11 +1,16 @@
 # autoERP2.0
 This is an updated version of the original [autoERP](https://github.com/HugoNjb/autoERP) developed by Hugo Najberg.
 
-LNS automated Matlab scripts for pre-processing raw EEG signal into filtered epoched data (Filtering_epoching.m), performing Independent Components Analyses (ICA) (Comp_ICA.m), and computing ERPs after interpolation and artefacts rejection (ERPs.m).
+## Changes from autoERP to autoERP2.0
+1. EEGLAB and its plugins have been updated and compatibility issues have been addressed. 
+2. The to-be-interpolated electrodes are now removed before running CleanLine and ASR pre-processing algorithms (to avoid injecting high-amplitude noise and compromising the algorithms efficiency).
+3. The GUI offers the possibility to define boundary triggers (Beginning and End of files) to remove portions of the EEG recording (outside these boundaries) which may be useless (e.g. break between blocks of trials). Again, the idea is to avoid injecting noisy data (e.g. muscle movements) into the pre-processing algorithms.
 
-**⚠️ Currently only compatible with raw .bdf (BioSemi) and .set files with 64 channels**
+All the changes were reported in the **[Wiki user manual](https://github.com/CorentinWicht/autoERP2.0/wiki)**.
 
 ## Description:
+LNS automated Matlab scripts for pre-processing raw EEG signal into filtered epoched data (Filtering_epoching.m), performing Independent Components Analyses (ICA) (Comp_ICA.m), and computing ERPs after interpolation and artefacts rejection (ERPs.m).
+
 Flexible and adaptable to all designs and folder trees.
 
 All steps can be skiped. All default values can be modified.
@@ -13,6 +18,8 @@ All steps can be skiped. All default values can be modified.
 A log is generated after each run to explain what was done to the files.
 
 For more information on how to get started, please refer to the **[Wiki user manual](https://github.com/CorentinWicht/autoERP2.0/wiki)**.
+
+**⚠️ Currently only compatible with raw .bdf (BioSemi) and .set files with 64 channels**
 
 **Script order and details:**
 
@@ -66,11 +73,6 @@ Isolated functions:
 * [natsort](https://ch.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
 
 The dependencies are already included in the Functions folder and loaded automatically.
-
-## Changes from autoERP to autoERP2.0
-1. EEGLAB and its plugins have been updated and any compatibility issue has been addressed. 
-2. The to-be-interpolated electrodes are now removed before running CleanLine and ASR pre-processing algorithms (to avoid injecting high-amplitude noise and compromising the algorithms efficiency).
-3. The GUI offers the possibility to define boundary triggers (e.g. Beginning and End) to remove portions of the EEG recording which may be useless (e.g. break between blocks of trials). Again, the principle is to avoid injecting noisy data (e.g. muscle movements) into the pre-processing algorithms.
 
 ## Authors
 [**Hugo Najberg**](https://www3.unifr.ch/med/spierer/en/group/team/people/194247/8d66b)\
