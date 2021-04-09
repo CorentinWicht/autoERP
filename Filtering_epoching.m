@@ -36,17 +36,9 @@ p2 = p(1:I_p(end)-1);
 
 
 % Path of all needed functions
-% addpath(strcat(p2,'\Functions\bdfplugin'));
 addpath(strcat(p2,'\Functions\Functions'));
-% addpath(strcat(p2,'\Functions\eeglab14_1_2b'));
 addpath(strcat(p2,'\Functions\eeglab2021.0'));
 
-% THIS IS A TEMPORARY FIX.
-% Openned an issue for Cleanline : https://github.com/sccn/cleanline/issues/3
-addpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\Cleanline2.00'))
-% rmpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\Cleanline2.00'))
-% same thing is happening with BLINKER ! 
-addpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\blinkerv1.1.2'))
 
 % Ask what they want to do with their data (filtering / mrk importing / epoching)
 answer = inputdlg({'Do you want to filter your data ? [Y/N]','Do you want to import .mrk ? [Y/N]',...
@@ -120,8 +112,6 @@ end
 PromptInputs = inputdlg(PromptInstructions,'Preprocessing parameters',1,PromptValues);
 PromptAlgoInputs = inputdlg(PromptAlgoInstruct,'Optionnal algorithms options',1,PromptAlgoValues); 
 
-% Default value for a specific case
-% PromptRSA = 'No';
 
 % Parameters to save from the prompts
 extension = PromptInputs{1};
@@ -134,18 +124,6 @@ if FILTER == 'Y' % If filtering
     bool_eBridge = PromptAlgoInputs{3};
 else
     bool_eBridge = PromptAlgoInputs{1};
-%     % if ASR, asks if want to feed resting state data to the algo
-%     if strcmpi(bool_ASR,'Y')
-%         PromptRSA = questdlg('Would you like to import individual resting-state data to be used as reference data in the ASR algorithm ?', ...
-% 	                '','Yes','No','No');
-%                 
-%         % If yes, where is the data to feed ?
-%         if strcmp(PromptRSA,'Yes')             
-%             RSData_folder = uigetdir('title',...
-%                 'Choose the path of your most upper folder containing your PREPROCESSED resting-state files');
-%             RSFileList = dir([RSData_folder '\**\*' extension]);
-%         end
-%     end  
 end
 
 if Epoch == 'Y' % If epoching
@@ -432,7 +410,7 @@ if interpolation_ans == 'Y' % If you want to interpolate
         %% Read csv Bad channels file
         % If a folder with interp parameters exist     
         % Load it and convert it to cells
-        InterpTable = table2cell(readtable([p_BadChannels f_BadChannels])); % ,'Delimiter',';','HeaderLines',2
+        InterpTable = table2cell(readtable([p_BadChannels f_BadChannels])); 
         InterpTable = InterpTable(2:end,:); % Removing example line
     end  
 end
@@ -490,22 +468,6 @@ for sbj = 1:numel(FileList)
         mkdir(NewPath);
     end
     
-    %% Finding resting-state file corresponding to current ERP file ! WIP !
-%     if strcmp(PromptRSA,'Yes')
-%         WhichRSPos = [];
-%         SearchName = strsplit(SubPath,'\');
-%         for m=1:numel(SearchName)
-%             if ~isempty(SearchName{m})
-%                 if sum(contains({RSFileList.name},SearchName{m})>=1) % May contain more than 1 file
-%                     WhichRSPos = [WhichRSPos find(contains({RSFileList.name},SearchName{m}))];
-%                 end
-%             end
-%         end
-% 
-%         % Retrieving the corresponding file
-%         WhichRSPos = mode(WhichRSPos); % find the most frequent value in array
-%     end
-
     %% Loading .bdf or .set 
     
     ext = split(extension,'.');
@@ -514,20 +476,10 @@ for sbj = 1:numel(FileList)
         case 'bdf'
             % ERP file
             EEG = pop_biosig(FileName,'channels',1:nbchan);
-%             % Resting-state file to feed ASR
-%             if strcmp(PromptRSA,'Yes')                
-%                 rsEEG = pop_biosig([RSFileList(WhichRSPos).folder '\' ...
-%                     RSFileList(WhichRSPos).name],'channels',1:nbchan);
-%             end
-            
+           
         case 'set'
             % ERP file
             EEG = pop_loadset(FileName);
-%             % Resting-state file to feed ASR
-%             if strcmp(PromptRSA,'Yes')               
-%                 rsEEG = pop_loadset([RSFileList(WhichRSPos).folder '\' ...
-%                     RSFileList(WhichRSPos).name]);
-%             end
     end
         
     % Waitbar updating
@@ -665,40 +617,10 @@ for sbj = 1:numel(FileList)
 
             % Replacing the old EEG dataset by the new one that was truncated
             EEG = OUTEEG;
-
-            % DEBUGGING
-            % Visualise difference
-    %         EEG = pop_eegfiltnew(EEG,'locutoff',low, 'hicutoff',high);
-    %         OUTEEG = pop_eegfiltnew(OUTEEG,'locutoff',low, 'hicutoff',high);
-    %         eegplot(OUTEEG.data,'data2',EEG.data,'events',EEG.event,'winlength',300)
-    %         
-    %         % Further tests (trying to see whether deletion happened correctly)
-    %         Region = RegionsToDel(1,1)-1000:RegionsToDel(1,2)+1000;
-    %         Temp = zeros(2,size(EEG.data(:,Region),2));
-    %         Temp(1,:) = mean(EEG.data(:,Region),1);
-    %         Temp(2,1:length(OUTEEG.data(:,Region))) = mean(OUTEEG.data(:,Region),1);
-
-    %         % First modification occured at column 1001
-    %         Position = find(Temp(1,:)==1.730386885339406);
-    %         [Temp(1,Position:Position+100);Temp(2,1001:1101)]
-
-            % The test indicates that the function is correct and only removed
-            % the regions of the file that were requested
         end
         
         %% Filtering
         if FILTER == 'Y'
-            
-            % Editing new channel location
-%             EEG.data = EEG.data(1:nbchan,:,:);
-%             EEG.nbchan = nbchan;
-            
-%             if strcmpi(PromptRSA,'Y')
-%                 % Resting-state file (may be unnecessary)
-%                 rsEEG = pop_chanedit(rsEEG, 'load',{chanloc_path 'filetype' 'autodetect'});
-%                 % Resting-state file (may be unnecessary)
-%                 rsEEG = pop_reref(rsEEG,ref_chan);
-%             end
 
             % Bandpass filtering (0.5 - 40 by default)
             EEG = pop_eegfiltnew(EEG,'locutoff',low, 'hicutoff',high);
@@ -715,50 +637,6 @@ for sbj = 1:numel(FileList)
                 % https://sccn.ucsd.edu/wiki/Artifact_Subspace_Reconstruction_(ASR)#The_option_.27availableRAM_GB.27_is_available_to_fix_the_length_of_final_output
                 % This issue was fixed in v.2.3: https://github.com/sccn/clean_rawdata/issues/15
                 EEG = clean_rawdata(EEG, -1, -1, -1, -1, 10, -1);
-                
-                %% NEW (27.09.2019) --> TO DO !!! 
-                % The idea is to use the loaded resting-state files to use
-                % them to build the clean reference for ASR interpolation
-                % of artifacts (on the ERP files). 
-    %             
-    %             % ASR settings
-    %             asr_windowlen = max(0.5,1.5*EEG.nbchan/EEG.srate);
-    %             BurstCriterion = 10;
-    %             asr_stepsize = [];
-    %             maxdims = 1;
-    %             availableRAM_GB = [];
-    %             usegpu = false;
-    %             
-    %             % TESTS :
-    %             rsEEG = clean_rawdata(rsEEG, -1, -1, -1, -1, 10, -1); 
-    %             TEMPEEG = EEG;
-    %            
-    %             % Creating a clean reference section (based on resting data)
-    %             EEGCleanRef = clean_windows(rsEEG,0.075,[-3.5 5.5],1);   
-    %             
-    %             % Calibrate on the reference data
-    %             state = asr_calibrate(EEGCleanRef.data, EEGCleanRef.srate,...
-    %                 BurstCriterion, [], [], [], [], [], [], [], 'availableRAM_GB', availableRAM_GB);
-    %             
-    %             % Extrapolate last few samples of the signal
-    %             sig = [EEG.data bsxfun(@minus,2*EEG.data(:,end),...
-    %                 EEG.data(:,(end-1):-1:end-round(asr_windowlen/2*EEG.srate)))];
-    %             
-    %             % Process signal using ASR
-    %             [TEMPEEG.data,state] = asr_process(sig,EEG.srate,state,...
-    %                 asr_windowlen,asr_windowlen/2,asr_stepsize,maxdims,availableRAM_GB,usegpu);
-    %             
-    %             % Shift signal content back (to compensate for processing delay)
-    %             TEMPEEG.data(:,1:size(state.carry,2)) = [];
-    %             
-    %             % Comparing the old and new data
-    %             plot(TEMPEEG.data(1,:))
-    %             hold on; plot(EEG.data(1,:)); hold off
-    %             legend('WithASR','WithoutASR')
-    % %             
-    %             % Comparing the old (with blinks) and new (without blinks) data
-    %             vis_artifacts(TEMPEEG,EEG);
-    %             EEG.data = TEMPEEG.data;
             end
             
             %% if there is a filtering but no mrk importation
@@ -1135,6 +1013,10 @@ if strcmpi(bool_eBridge,'Y')
             fprintf(fid,'\r\n');
         end
     end
+end
+
+if nnz(~cellfun(@isempty,BoundTrig))>0
+   fprintf(fid,'\r\n%s\r\n',sprintf('Boundary Triggers (beg - end): %s - %s',BoundTrig{:}));
 end
 
 fclose(fid);

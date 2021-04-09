@@ -75,10 +75,9 @@ comp_suffix=PromptInputs{3};
 
 % ---------- SET PATHS
 % Path of all needed functions
-% addpath(genpath(strcat(p2,'\Functions')));
 addpath(genpath(strcat(p2,'\Functions\Functions')));
 addpath(strcat(p2,'\Functions\Functions\LBPA40-atlas-2011-04-28'));
-addpath(strcat(p2,'\Functions\eeglab14_1_2b'));
+addpath(strcat(p2,'\Functions\eeglab2021.0'));
 
 % Installing Mpich 2.4.1 for AMICA algorithm (optional)
 if strcmpi(PromptICA,'YES') && strcmpi(PromptICAAlgo, 'AMICA')
@@ -100,12 +99,6 @@ if strcmpi(PromptICA,'YES') && strcmpi(PromptICAAlgo, 'AMICA')
             Result = 1;
         end
     end
-    
-    % NEW SOLLUTION
-    % The result is 0 if found, 1 if NOT found !!! 
-%     [Result, WordPath] = system('WHERE /F /R "c:\Program Files" fmpich2.lib');
-%     [Result, WordPath] = system('WHERE /F /R "c:\Program Files (x86)" fmpich2.lib');
-%     system(WordPath)
 
     if ~Result
 
@@ -144,9 +137,9 @@ if strcmpi(PromptICA,'YES') && strcmpi(PromptICAAlgo, 'AMICA')
 
         % Delete temporary directory and content (Mpich install)
         try
-            rmdir([p2 '\Mpich2_1.4'],'s')
+            rmdir([p2 '\Mpich2_1.4'],'s') 
         catch
-           sprintf('ERROR: Could not remove the Mpich folder automatically, do it manually') 
+           warning(['Could not remove the Mpich folder "' [p2 '\Mpich2_1.4'] '" automatically due to administrative rights issue.']) 
         end
     end
 end
@@ -226,8 +219,6 @@ if strcmp(PromptICA,'YES')
         if strcmpi(PromptICAAlgo, 'RUNICA')
             % Algorithm 1: RUNICA (EEGLab default)
             EEG = pop_runica(EEG, 'extended',1,'interupt','on','concatenate','on','icatype','runica','resave','off');
-            % new algorithm that should be fast
-            %EEG = pop_runica2(EEG, 'extended',1,'interupt','on','concatenate','on','icatype','picard');
             
             % Loop for saving the datasets
             for files = 1:size(FileListSubj,1)
@@ -258,7 +249,7 @@ if strcmp(PromptICA,'YES')
                 TMP = eeg_checkset(ALLEEG(i), 'loaddata');
                 OUTEEG.data(:,cpnts:cpnts+tmplen-1) = reshape(TMP.data, size(TMP.data,1), size(TMP.data,2)*size(TMP.data,3));
                 cpnts = cpnts+tmplen;
-            end;
+            end
             OUTEEG.icaweights = [];
             OUTEEG.trials = 1;
             OUTEEG.pnts   = size(OUTEEG.data,2);
@@ -353,16 +344,10 @@ for Count = 1:numel(FolderList)
             % Initialize the analysis for each data
             Restart=0;
 
-            % Average referencing (May be useless)
-            % EEG = average_ref(EEG,EEG.chaninfo.nodatchans);
-
             % Computing automated dipole fitting
             EEG=Automated_DipfitNEW(EEG);
-            % close gcf
 
             % ICLabel plugin
-            % FIND IN iclabel 0.3 the function to flag components to reject (better
-            % than method below!)
             EEG=iclabel(EEG);
 
             % Retrieve results (pre-select all non-brain components)

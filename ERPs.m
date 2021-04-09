@@ -63,7 +63,6 @@ p2 = p(1:I_p(end)-1);
 % ---------- SET PATHS
 % Path of all needed functions
 addpath(strcat(p2,'\Functions\Functions'));
-% addpath(strcat(p2,'\Functions\eeglab14_1_2b'));
 addpath(strcat(p2,'\Functions\eeglab2021.0'));
 addpath(genpath(strcat(p2,'\Functions\EEGInterp')));
 
@@ -283,10 +282,9 @@ end
 %% Bad Channels Table
 
 SbjList = {}; InterpSbj = 1;
-% 
-% if interpolation_ans == 'Y'
-%     
-    % Create a variable with all the channels information
+
+% Create a variable with all the channels information
+% THIS SHOULD REALLY BE OPTIMIZED w/ the chanloc file ! 
 rowname = [{'Fp1(1)'},{'AF7(2)'},{'AF3(3)'},{'F1(4)'},{'F3(5)'},{'F5(6)'},{'F7(7)'},...
     {'FT7(8)'},{'FC5(9)'},{'FC3(10)'},{'FC1(11)'},{'C1(12)'},{'C3(13)'},{'C5(14)'},...
     {'T7(15)'},{'TP7(16)'},{'CP5(17 )'},{'CP3(18)'},{'CP1(19)'},{'P1(20)'},{'P3(21)'},...
@@ -296,121 +294,6 @@ rowname = [{'Fp1(1)'},{'AF7(2)'},{'AF3(3)'},{'F1(4)'},{'F3(5)'},{'F5(6)'},{'F7(7
     {'FT8(43)'},{'FC6(44)'},{'FC4(45)'},{'FC2(46)'},{'FCz(47)'},{'Cz(48)'},{'C2(49)'},{'C4(50)'},...
     {'C6(51)'},{'T8(52)'},{'TP8(53)'},{'CP6(54)'},{'CP4(55)'},{'CP2(56)'},{'P2(57)'},...
     {'P4(58)'},{'P6(59)'},{'P8(60)'},{'P10(61)'},{'PO8(62)'},{'PO4(63)'},{'O2(64)'}];
-% 
-%     % Removing the '(n)' after the chan label 
-%     Index = strfind(rowname,'(');
-%     rowname_nonumb = cellfun(@(x,idx) x(1:idx-1),rowname,Index,'UniformOutput',false);
-% 
-%         
-%     if interpolation_param ~= 'Y'
-%                             
-%         %% Manually enter the channels
-%         AllNames = unique({FileList.folder});
-%         to_display={};
-% 
-%         % Removing the consistant path
-%         for x = 1:length(AllNames)
-%             temp = AllNames{x};
-%             to_display{x} = temp(length(root_folder)+2:end);
-%         end
-% 
-%         to_display = [natsort(to_display)', repmat({false},[size(AllNames,2) 1])];
-% 
-%         % Select folders on which to specify Bad Channels from
-%         f = figure('Position', [500 300 380 420]);
-%         p=uitable('Parent', f,'Data',to_display,'ColumnEdit',[false true],'ColumnName',...
-%             {'Folders', 'Bad Channels ?'},'CellEditCallBack','SbjList_I = get(gco,''Data'');');
-%         uicontrol('Style', 'text', 'Position', [20 325 200 50], 'String',...
-%                 {'Folder selection for Bad Channels.','Click on the box of the participants folder you want to specify bad channels from.'});
-% 
-%         % Wait for p to close until running the rest of the script
-%         waitfor(p)
-% 
-%         % Retrieve the selected folder  
-%         SbjList = SbjList_I(cell2mat(SbjList_I(:,2)),1);        
-% 
-%         %% Asking the bad channels for each subject
-%         if ~isempty(SbjList)            
-% 
-%             figure('Position', [500 300 380 420]);
-%             t = uitable('Data',repmat({false},[63 length(SbjList)]),'ColumnEditable',true(1,length(SbjList)),...
-%                 'Rowname',rowname,'ColumnName',SbjList,'CellEditCallBack','BadChannels = get(gco,''Data'');');
-%             uicontrol('Style', 'text', 'Position', [20 325 200 50], 'String',{'Enter the bad channels','Cz does not appear as it is taken as reference.'});
-% 
-%             % Wait for t to close until running the rest of the script
-%             waitfor(t)
-% 
-%             % Changing the Bad Channels logical arrays into the corresponding row names
-%             for x = 1:length(SbjList)       
-%                 BadChanLabels_log{x} = rowname([BadChannels{:,x}]);  
-%                 BadChanLabels{x} = rowname_nonumb([BadChannels{:,x}]);               
-%             end
-% 
-%             %% saving the epoching parameters into a structure
-% 
-%             BadChannels_Parameters.Sbj = SbjList;
-%             BadChannels_Parameters.Channels = BadChanLabels;
-% 
-%             uisave('BadChannels_Parameters',[load_folder '\BadChannels_Parameters.mat'])
-%         end
-%         
-%     % If already setup parameters
-%     else        
-%         % Choose the file
-%         [f_BadChannels,p_BadChannels] = uigetfile({'*.*';'*.csv';'*.mat'},...
-%             'Select the .csv or .mat file containing the Bad Channels',load_folder);
-%         name_f_BadChannels = [p_BadChannels,f_BadChannels];
-%         extension_param = split(f_BadChannels,'.');
-%         extension_param = extension_param{end};
-%         
-%         %% Read csv Bad channels file
-%         % If a folder with interp parameters exist
-%         switch extension_param
-%             case 'csv'            
-%                 % Load it and convert it to cells
-%                 T_BadChannels = readtable([p_BadChannels f_BadChannels],'Delimiter',';','HeaderLines',2);
-%                 T_BadChannels = table2cell(T_BadChannels);
-% 
-%                 % Remove empty col
-%                 idx = all(cellfun(@isempty,T_BadChannels),1);
-%                 T_BadChannels(:,idx) = [];
-% 
-%                 % If electrodes labels are letters convert them to numbers
-%                 if ischar(T_BadChannels{1,2})
-%                     NumT_BadChannels = [T_BadChannels(:,1) repmat({NaN},size(T_BadChannels(:,2:end)))];
-%                     for m=1:size(T_BadChannels(:,2:end),1)
-%                         for n=1:size(T_BadChannels(:,2:end),2)
-%                             if ~isempty(T_BadChannels{m,n+1})
-%                                 NumT_BadChannels{m,n+1} = find(ismember(rowname_nonumb,T_BadChannels(m,n+1)));
-%                             end
-%                         end
-%                     end
-%                     T_BadChannels = NumT_BadChannels;
-%                 end
-%                 
-%                 % Remove empty rows
-%                 idx = all(cellfun(@isnan,T_BadChannels(:,2:end)),2);
-%                 T_BadChannels(idx,:) = [];
-% 
-%                 % Variable attribution to SbjList
-%                 SbjList = T_BadChannels(:,1);
-% 
-%                 % Variable attribution to BadChanLabels
-%                 for chan = 1:length(SbjList) % for each non-empty row
-%                     temp = [T_BadChannels{chan,2:end}]; % take the values
-%                     temp = temp(~isnan(temp)); % remove the nan
-%                     BadChanLabels_log{chan} = rowname(temp); % replace them by labels
-%                     BadChanLabels{chan} = rowname_nonumb(temp);               
-%                 end    
-%                 
-%             case 'mat'
-%                 % Open the parameters.mat
-%                 open(name_f_BadChannels)
-%                 SbjList = BadChannels_Parameters.Sbj;
-%                 BadChanLabels = BadChannels_Parameters.Channels;
-%         end
-%     end
-% end
 
 %% eeglab
 
@@ -420,10 +303,6 @@ close all
 % set double-precision parameter
 pop_editoptions('option_single', 0);
 time_start = datestr(now);
-
-% Supercomputer slash inversion and remove spaces
-% SbjList = strrep(SbjList,'/','\');
-% SbjList = deblank(SbjList);
 
 %% For each file and condition, we load and merge datasets
 
@@ -620,27 +499,7 @@ for sbj = 1:sbj_high
         
         %% Bad channels if the subject is in SbjList
 
-%         to_inspect = 1:EEG.nbchan;
         Interpolation = 0;
-        
-%         if contains(name_session,SbjList) && ~isempty(SbjList)       
-%             
-%             % Need to interpolate later ?
-%             Interpolation = 1;
-% 
-%             % Bad Channels associated to this subject
-%             I_sbj = find(strcmp(name_session,SbjList));
-%             EEG.BadChan = BadChanLabels{I_sbj};
-%             to_ignore = [];
-% 
-%             % Transforming the channels name in eeglab chan num
-%             for x = 1:length(EEG.BadChan)
-%                 to_ignore(x) = find(ismember(upper({EEG.chanlocs.labels}),upper(EEG.BadChan(x))));
-%             end
-% 
-%             to_inspect(to_ignore) = [];
-%         end
-
         if isfield(EEG,'BadChans')    
             
             % Need to interpolate later ?
@@ -652,9 +511,6 @@ for sbj = 1:sbj_high
             % Store rejected/interp channels for the log
             BadChanLabels_log{InterpSbj} = rowname(to_interp);
             InterpSbj = InterpSbj + 1;
-
-            % Channels on which to apply 80mv threshold
-%             to_inspect(to_interp) = [];
             
             % Store list of subjects with interpolation
             FileName = FileList(sbj).name(1:end-length(extension));
@@ -763,9 +619,6 @@ for sbj = 1:sbj_high
                        % Restricting channel data length since EEG.data
                        % size might have changed with artifact rejection
                         Temp(m,:,:) = EEG.BadChans.data(PosBad,:,:);PosBad = PosBad + 1;
-
-                       % Filling in the missing channel data with zeros (Is this correct?!)
-                       %Temp(m,:,:) = zeros(1,size(EEG.data,2),size(EEG.data,3));PosBad = PosBad + 1;
                     end
                 end
                 
@@ -827,10 +680,6 @@ for sbj = 1:sbj_high
             allERPs{x} = EEG;
 
         end
-
-        % Computing the minimum of trials between ERP of a same condition,
-        % after artefact and jump rejection
-%         min_sample = min(NEpochs);
 
         %% Creating the ERP
         for n = 1:length(allERPs)
@@ -928,8 +777,6 @@ for sbj = 1:sbj_high
             NTrials_T(t_count,5) = {Jump_30uV_N(n)};
             NTrials_T(t_count,6) = {Jump_30uV_p(n)};
             NTrials_T(t_count,7) = {NEpochs(n)};
-%             NTrials_T(t_count,8) = {min_sample};
-
                                     
         end    
     end
