@@ -1,5 +1,5 @@
 # autoERP2.0
-This is an updated version of the original [autoERP](https://github.com/HugoNjb/autoERP) developed by Hugo Najberg.
+This is an updated version of the original [autoERP](https://github.com/HugoNjb/autoERP) developed by Hugo Najberg and Corentin Wicht.
 
 ## Changes from autoERP to autoERP2.0
 1. EEGLAB and its plugins have been updated and compatibility issues have been addressed. 
