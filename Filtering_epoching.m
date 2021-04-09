@@ -69,9 +69,11 @@ PromptInstructions = {'Enter the suffix and extension of your data (.bdf or XXX.
     'Enter the epoching interval (in ms)',...
     'Enter the sampling rate:', ...
     'How many channels do you work with ?',...
-    'Would you add presentation triggers delay (in ms, optional) ?'};
+    ['OPTIONAL:',newline,'Would you add presentation triggers delay (in ms) ?'],...
+    ['OPTIONAL:',newline,'You have the possibility to use boundary triggers to exclude portion of the recordings outside these boundaries.',...
+    newline,'If you want to set boundary triggers, separate them by a semi-colon (";"), otherwise leave empty!']};
 
-PromptValues = {'.bdf','filtered','0.5','40','epoched','-100 700','1024','64',''};
+PromptValues = {'.bdf','filtered','0.5','40','epoched','-100 700','1024','64','','254;255'};
 
 
 % Optionnal algorithms decision
@@ -85,7 +87,7 @@ PromptAlgoInstruct = {['Would you like to use... [Y/N]' newline,...
 
 PromptAlgoValues = {'Y','Y','Y','Y','Y','-100 700'};
  
-
+Bool = 0;
 % If user doesn't want to filter, remove the associated lines
 if FILTER ~= 'Y'
     PromptInstructions(2:4) = [];
@@ -96,16 +98,22 @@ end
 
 % If user doesn't want to epoch, remove the associated lines
 if Epoch ~= 'Y'
-    PromptInstructions(end-4:end-2) = [];
-    PromptValues(end-4:end-2) = [];
+    if ImportMRK ~= 'Y'
+        PromptInstructions(end-5:end-3) = [];
+        PromptValues(end-5:end-3) = [];
+    else
+        PromptInstructions(end-5:end-4) = [];
+        PromptValues(end-5:end-4) = [];
+    end
     PromptAlgoInstruct(end-2:end) = [];
     PromptAlgoValues(end-2:end) = [];
 end
 
 % If user doesn't want to import mrk, remove the associated lines
 if ImportMRK ~= 'Y'
-    PromptInstructions(end) = [];
-    PromptValues(end) = [];
+    PromptInstructions(end-1) = [];
+    PromptValues(end-1) = [];
+    Bool = 1; 
 end
 
 % Displaying the final prompts
@@ -113,7 +121,7 @@ PromptInputs = inputdlg(PromptInstructions,'Preprocessing parameters',1,PromptVa
 PromptAlgoInputs = inputdlg(PromptAlgoInstruct,'Optionnal algorithms options',1,PromptAlgoValues); 
 
 % Default value for a specific case
-PromptRSA = 'No';
+% PromptRSA = 'No';
 
 % Parameters to save from the prompts
 extension = PromptInputs{1};
@@ -123,7 +131,9 @@ if FILTER == 'Y' % If filtering
     high = str2double(PromptInputs{4});
     bool_CleanLine = PromptAlgoInputs{1};
     bool_ASR = PromptAlgoInputs{2};
-    
+    bool_eBridge = PromptAlgoInputs{3};
+else
+    bool_eBridge = PromptAlgoInputs{1};
 %     % if ASR, asks if want to feed resting state data to the algo
 %     if strcmpi(bool_ASR,'Y')
 %         PromptRSA = questdlg('Would you like to import individual resting-state data to be used as reference data in the ASR algorithm ?', ...
@@ -137,12 +147,11 @@ if FILTER == 'Y' % If filtering
 %         end
 %     end  
 end
-bool_eBridge = PromptAlgoInputs{3};
 
 if Epoch == 'Y' % If epoching
-    epoched_suffix = PromptInputs{end-4};
-    interval = str2num(PromptInputs{end-3});
-    sr = str2double(PromptInputs{end-2});
+    epoched_suffix = PromptInputs{end-5+Bool};
+    interval = str2num(PromptInputs{end-4+Bool});
+    sr = str2double(PromptInputs{end-3+Bool});
     % Conversion from ms to TimeFrames according to sampling rate
     intervalTF = round(interval*sr/1000);
     bool_conderror = 1;
@@ -153,17 +162,21 @@ end
 
 % Converting the Error in ms for the log and TF for the structure
 if ImportMRK == 'Y'
-    PromptChanLoc = PromptInputs{end-1};
-    Error_ms = str2num(PromptInputs{end});
+    PromptChanLoc = PromptInputs{end-2};
+    Error_ms = str2double(PromptInputs{end-1});
     if isempty(Error_ms)
         Error_TF = 0;
         Error_ms = 0;
     else
+        sr = str2double(PromptInputs{end-3+Bool});
         Error_TF = round(Error_ms / ((1/sr)*1000));
     end
 else
-    PromptChanLoc = PromptInputs{end};
+    PromptChanLoc = PromptInputs{end-1};
 end
+
+% Boundary triggers
+BoundTrig = strsplit(PromptInputs{end},';');
 
 % Channels location path
 if strcmp(PromptChanLoc,'64')
@@ -626,51 +639,52 @@ for sbj = 1:numel(FileList)
                             
         %% REMOVING EVENTS (BASED ON TRIGGERS)
       
-        % Removing the data recorded in between the beginning and end of
-        % each block
-        % THIS SHOULD BE IN THE USER GUI!
-        OUTEEG = EEG; Pos = 1; RegionsToDel = [];
-        AllEventsType = cell2mat({EEG.event.type});
-        AllEventsLat = cell2mat({EEG.event.latency});
-        for f=1:length(EEG.event)-1
-            if AllEventsType(f) == 255 && AllEventsType(f+1) == 254 % Should here depend on user inputs !!
-                RegionsToDel(Pos,1) = AllEventsLat(f);
-                 RegionsToDel(Pos,2) = AllEventsLat(f+1);
-                Pos = Pos + 1;
+        % Removing the data recorded outside the GUI provided Boundaries
+        if nnz(~cellfun(@isempty,BoundTrig))>0
+            
+            OUTEEG = EEG; Pos = 1; RegionsToDel = [];
+            AllEventsType = cell2mat({EEG.event.type});
+            AllEventsLat = cell2mat({EEG.event.latency});
+            for f=1:length(EEG.event)-1
+                if AllEventsType(f) == str2double(BoundTrig{2}) && AllEventsType(f+1) == str2double(BoundTrig{1}) 
+                    RegionsToDel(Pos,1) = AllEventsLat(f);
+                     RegionsToDel(Pos,2) = AllEventsLat(f+1);
+                    Pos = Pos + 1;
+                end
             end
-        end
-        
-        % Reject the data regions
-        OUTEEG = eeg_eegrej(EEG, RegionsToDel);
-        
-        % Transform back all event types to integers
-        for f=1:length(OUTEEG.event) 
-            if ischar(OUTEEG.event(f).type) || isstring(OUTEEG.event(f).type)
-                OUTEEG.event(f).type=str2double(OUTEEG.event(f).type);
-            end
-        end   
-        
-        % Replacing the old EEG dataset by the new one that was truncated
-        EEG = OUTEEG;
-        
-        % DEBUGGING
-        % Visualise difference
-%         EEG = pop_eegfiltnew(EEG,'locutoff',low, 'hicutoff',high);
-%         OUTEEG = pop_eegfiltnew(OUTEEG,'locutoff',low, 'hicutoff',high);
-%         eegplot(OUTEEG.data,'data2',EEG.data,'events',EEG.event,'winlength',300)
-%         
-%         % Further tests (trying to see whether deletion happened correctly)
-%         Region = RegionsToDel(1,1)-1000:RegionsToDel(1,2)+1000;
-%         Temp = zeros(2,size(EEG.data(:,Region),2));
-%         Temp(1,:) = mean(EEG.data(:,Region),1);
-%         Temp(2,1:length(OUTEEG.data(:,Region))) = mean(OUTEEG.data(:,Region),1);
 
-%         % First modification occured at column 1001
-%         Position = find(Temp(1,:)==1.730386885339406);
-%         [Temp(1,Position:Position+100);Temp(2,1001:1101)]
-        
-        % The test indicates that the function is correct and only removed
-        % the regions of the file that were requested
+            % Reject the data regions
+            OUTEEG = eeg_eegrej(EEG, RegionsToDel);
+
+            % Transform back all event types to integers
+            for f=1:length(OUTEEG.event) 
+                if ischar(OUTEEG.event(f).type) || isstring(OUTEEG.event(f).type)
+                    OUTEEG.event(f).type=str2double(OUTEEG.event(f).type);
+                end
+            end   
+
+            % Replacing the old EEG dataset by the new one that was truncated
+            EEG = OUTEEG;
+
+            % DEBUGGING
+            % Visualise difference
+    %         EEG = pop_eegfiltnew(EEG,'locutoff',low, 'hicutoff',high);
+    %         OUTEEG = pop_eegfiltnew(OUTEEG,'locutoff',low, 'hicutoff',high);
+    %         eegplot(OUTEEG.data,'data2',EEG.data,'events',EEG.event,'winlength',300)
+    %         
+    %         % Further tests (trying to see whether deletion happened correctly)
+    %         Region = RegionsToDel(1,1)-1000:RegionsToDel(1,2)+1000;
+    %         Temp = zeros(2,size(EEG.data(:,Region),2));
+    %         Temp(1,:) = mean(EEG.data(:,Region),1);
+    %         Temp(2,1:length(OUTEEG.data(:,Region))) = mean(OUTEEG.data(:,Region),1);
+
+    %         % First modification occured at column 1001
+    %         Position = find(Temp(1,:)==1.730386885339406);
+    %         [Temp(1,Position:Position+100);Temp(2,1001:1101)]
+
+            % The test indicates that the function is correct and only removed
+            % the regions of the file that were requested
+        end
         
         %% Filtering
         if FILTER == 'Y'
