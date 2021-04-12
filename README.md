@@ -89,7 +89,7 @@ The dependencies are already included in the Functions folder and loaded automat
 
 ## Cite the repository
 C.A. Wicht, H. Najberg, autoERP2.0, (2021), GitHub repository https://github.com/CorentinWicht/autoERP2.0 \
-[![DOI] XXX NEED TO CREATE A DOI! 
+[![DOI](https://zenodo.org/badge/355853456.svg)](https://zenodo.org/badge/latestdoi/355853456)
 
 ## License
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
