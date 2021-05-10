@@ -39,6 +39,14 @@ p2 = p(1:I_p(end)-1);
 addpath(strcat(p2,'\Functions\Functions'));
 addpath(strcat(p2,'\Functions\eeglab2021.0'));
 
+% THIS IS A TEMPORARY FIX.
+% Openned an issue for Cleanline : https://github.com/sccn/cleanline/issues/3
+addpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\Cleanline2.00'))
+% rmpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\Cleanline2.00'))
+% same thing is happening with BLINKER ! 
+addpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\blinkerv1.1.2'))
+
+
 
 % Ask what they want to do with their data (filtering / mrk importing / epoching)
 answer = inputdlg({'Do you want to filter your data ? [Y/N]','Do you want to import .mrk ? [Y/N]',...
