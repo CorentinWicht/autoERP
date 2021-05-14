@@ -34,19 +34,16 @@ p = matlab.desktop.editor.getActiveFilename;
 I_p = strfind(p,'\');
 p2 = p(1:I_p(end)-1);
 
-
 % Path of all needed functions
 addpath(strcat(p2,'\Functions\Functions'));
 addpath(strcat(p2,'\Functions\eeglab2021.0'));
 
 % THIS IS A TEMPORARY FIX.
 % Openned an issue for Cleanline : https://github.com/sccn/cleanline/issues/3
-addpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\Cleanline2.00'))
+addpath(genpath(strcat(p2,'\Functions\eeglab2021.0\plugins\Cleanline2.00')))
 % rmpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\Cleanline2.00'))
 % same thing is happening with BLINKER ! 
-addpath(genpath('E:\GitHub\autoERP\Functions\eeglab2021.0\plugins\blinkerv1.1.2'))
-
-
+addpath(genpath(strcat(p2,'\Functions\eeglab2021.0\plugins\blinkerv1.1.2')))
 
 % Ask what they want to do with their data (filtering / mrk importing / epoching)
 answer = inputdlg({'Do you want to filter your data ? [Y/N]','Do you want to import .mrk ? [Y/N]',...
@@ -493,7 +490,7 @@ for sbj = 1:numel(FileList)
     % Waitbar updating
     waitbar(sbj/numel(FileList),h,{name_h , ['Progress: ' num2str(sbj) '/' num2str(numel(FileList))]})
     
-    % Si on a des données dans le fichier, alors analyser
+    % Si on a des donnï¿½es dans le fichier, alors analyser
     if nnz(size(EEG.data,2))
     
         % Load channels location file
@@ -756,7 +753,7 @@ for sbj = 1:numel(FileList)
                 for n = 1:length(toepoch_i)
                     if toepoch_i{n} == 1
                         count = count+1;
-                       % Si pas de newmarker indiqué, on prend l'ancien ID
+                       % Si pas de newmarker indiquï¿½, on prend l'ancien ID
                        if ~isempty(NewMarkers{n})
                            toepoch{count} = NewMarkers{n};
                        else
