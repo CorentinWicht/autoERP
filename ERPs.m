@@ -616,9 +616,11 @@ for sbj = 1:sbj_high
                     if ~ismember(m,EEG.BadChans.InterpChans) 
                        Temp(m,:,:) = EEG.data(PosGood,:,:); PosGood = PosGood + 1;
                     else
-                       % Restricting channel data length since EEG.data
-                       % size might have changed with artifact rejection
-                        Temp(m,:,:) = EEG.BadChans.data(PosBad,:,:);PosBad = PosBad + 1;
+                        if m~=48 && m~=128 % Special case with reference electrode that requires interpolation
+                            % Restricting channel data length since EEG.data
+                            % size might have changed with artifact rejection
+                            Temp(m,:,:) = EEG.BadChans.data(PosBad,:,:);PosBad = PosBad + 1;
+                        end
                     end
                 end
                 

@@ -166,10 +166,12 @@ if strcmp(PromptChanLoc,'64')
     chanloc_path=(strcat(p2,'\ChanLocs\biosemi64.locs'));
     nbchan = 64;
     ref_chan = 48;
+    ref_lab = 'Cz';
 elseif strcmp(PromptChanLoc,'128')
     chanloc_path=(strcat(p2,'\ChanLocs\biosemi128.xyz'));
     nbchan = 128;
     ref_chan = 1;
+    ref_lab = 'A1';
 end
 
 % Path of your upper folder containing your data
@@ -441,7 +443,8 @@ i_load = 0;
 StoredRejectEpochs = cell(1,numel(FileList));
 Bridges = cell(1,numel(FileList));
 Alltrials = cell(1,numel(FileList));
-
+AllChansToRej = cell(1,numel(FileList));
+            
 for sbj = 1:numel(FileList)
 
     %% Name shenanigans
@@ -511,7 +514,6 @@ for sbj = 1:numel(FileList)
         
         if interpolation_ans == 'Y' % If you want to interpolate
             clear ChansToRej
-            AllChansToRej = cell(1,numel(FileList));
             Pos = find(ismember(InterpTable(:,1),name_noe));
             if ~isempty(InterpTable{Pos,2})
                 if isnumeric(InterpTable{Pos,2}) % If channels numbers
@@ -522,7 +524,12 @@ for sbj = 1:numel(FileList)
                     ChansToRejLab = ChansToRejLab(~cellfun('isempty',ChansToRejLab)); % Removing empty chars
                     ChansToRejLab = ChansToRejLab(cellfun(@(x) ischar(x),ChansToRejLab)); % Removing NaNs
                     for m=1:length(ChansToRejLab) % Replace by numbers
-                        ChansToRej(m) = find(ismember({EEG.chanlocs.labels},ChansToRejLab{m}));
+                        
+                        if ~strcmpi(ChansToRejLab{m},ref_lab)
+                            % Cannot remove the reference electrode ! 
+                            ChansToRej(m) = find(ismember(lower({EEG.chanlocs.labels}),...
+                                lower(ChansToRejLab{m})));
+                        end
                     end
                 end
                 % Storage
@@ -540,6 +547,13 @@ for sbj = 1:numel(FileList)
 
                 % Removing the bad channels
                 EEG = pop_select(EEG,'nochannel',ChansToRej);  
+                
+                % Special case where the electrode to interpolate is
+                % currently the reference but will be accessible after
+                % average referencing
+                if any(contains(lower(ChansToRejLab),lower(ref_lab)))
+                    EEG.BadChans.InterpChans = [EEG.BadChans.InterpChans ref_chan];
+                end
             end
         end
         
