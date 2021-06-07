@@ -147,7 +147,7 @@ end
 if ImportMRK == 'Y'
     PromptChanLoc = PromptInputs{end-2};
     Error_ms = str2double(PromptInputs{end-1});
-    if isempty(Error_ms)
+    if isempty(Error_ms) || isnan(Error_ms)
         Error_TF = 0;
         Error_ms = 0;
     else
@@ -672,6 +672,7 @@ for sbj = 1:numel(FileList)
             %% Checking for condition naming problem
             % Test if the conditions appear multiple times in the file's name
             if bool_conderror
+                error_condname = [];
 
                 % For each named condition, see how many times it appear in the file's name
                 for i = 1:length(CondList)
