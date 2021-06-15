@@ -222,7 +222,7 @@ if strcmp(PromptICA,'YES')
             % Run ICA
             if strcmpi(PromptICAAlgo, 'RUNICA')
                 % Algorithm 1: RUNICA (EEGLab default)
-                EEG = pop_runica(EEG, 'extended',1,'interupt','on','concatenate','on','icatype','runica','resave','off');
+                EEG = pop_runica(EEG, 'extended',1,'interupt','on','concatenate','on','icatype','runica');
 
                 % Loop for saving the datasets
                 for files = 1:size(FileListSubj,1)
@@ -291,11 +291,12 @@ if strcmp(PromptICA,'YES')
                 % Loading dataset   
                 [ALLEEG EEG] = pop_loadset('filename',FileListSubj(files).name,'filepath',FullPath_toICA); 
                 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG,1,'retrieve',1 ,'study',0);
+                EEG = eeg_checkset(EEG);
 
                 % Run ICA
                 if strcmpi(PromptICAAlgo, 'RUNICA')
                     % Algorithm 1: RUNICA (EEGLab default)
-                    EEG = pop_runica(EEG, 'extended',1,'interupt','on','icatype','runica','resave','off');
+                    EEG = pop_runica(EEG, 'icatype', 'runica', 'extended',1,'interrupt','on');
 
                     % Loop for saving the dataset
                     pop_saveset(EEG, 'filename',ICAFileNames{files},'filepath',ExportPath_toICA);
