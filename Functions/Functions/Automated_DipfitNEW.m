@@ -19,7 +19,7 @@ function EEG = Automated_DipfitNEW(EEG)
 %-------------------------------------------------------------------------%
 
 % Need to use MNI template to match the ATLAS coordinates! 
-DipFitPath=backslash(strcat(strrep(which('eeglab'),'eeglab.m',''),'plugins\dipfit3.0\'));
+DipFitPath=backslash(strcat(strrep(which('eeglab'),'eeglab.m',''),'plugins\dipfit\'));
 
 %  Calculate the invidivualized transform parameters of elect locations
 EEG=pop_chanedit(EEG,'lookup',strcat(DipFitPath,'standard_BEM\\elec\\standard_1005.elc')); 
