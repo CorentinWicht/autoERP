@@ -67,11 +67,13 @@ save_folder = uigetdir('title',...
 % Suffixes
 PromptSetup = {'Enter the suffixe of your epoched datasets:',...
     'Enter the suffixe of your data with ICA:',...
-    'Enter the suffixe of your new dataset:'};
-PromptInputs=inputdlg(PromptSetup,'Inputs to prepare ICA',1,{'epoched','icaED','icaRejected'});
+    'Enter the suffixe of your new dataset:',...
+    'Do you want to merge datasets ?'};
+PromptInputs=inputdlg(PromptSetup,'Inputs to prepare ICA',1,{'epoched','icaED','icaRejected','N'});
 epoched_extension=strcat(PromptInputs{1},'.set');
 extension=strcat(PromptInputs{2},'.set');
 comp_suffix=PromptInputs{3};
+merge_ans = upper(PromptInputs{4});
 
 % ---------- SET PATHS
 % Path of all needed functions
@@ -204,77 +206,118 @@ if strcmp(PromptICA,'YES')
         cd(FullPath_toICA)
         ICAFileNames={};
         FileListSubj = dir(['*' epoched_extension]);
-                
-        % Create names of icaed datasets
-        for files = 1:size(FileListSubj,1)
-            ICAFileNames(files) = {[FileListSubj(files).name(1:end-length(epoched_extension)),extension]};
-        end
-
-        % Loading multiple datasets    
-        [ALLEEG EEG] = pop_loadset('filename',{FileListSubj.name},'filepath',FullPath_toICA); 
-        [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG,...
-            1:size(FileListSubj,1) ,'retrieve',1:size(FileListSubj,1) ,'study',0);
-
-        % Run ICA
-        if strcmpi(PromptICAAlgo, 'RUNICA')
-            % Algorithm 1: RUNICA (EEGLab default)
-            EEG = pop_runica(EEG, 'extended',1,'interupt','on','concatenate','on','icatype','runica','resave','off');
-            
-            % Loop for saving the datasets
+        
+        % MERGING DATASETS
+        if strcmpi(merge_ans,'Y')
+            % Create names of icaed datasets
             for files = 1:size(FileListSubj,1)
-                %[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, size(FileListSubj,1) ,'retrieve',files,'study',0); 
-                pop_saveset(EEG(files), 'filename',ICAFileNames{files},'filepath',ExportPath_toICA);
+                ICAFileNames(files) = {[FileListSubj(files).name(1:end-length(epoched_extension)),extension]};
             end
+
+            % Loading multiple datasets    
+            [ALLEEG EEG] = pop_loadset('filename',{FileListSubj.name},'filepath',FullPath_toICA); 
+            [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG,...
+                1:size(FileListSubj,1) ,'retrieve',1:size(FileListSubj,1) ,'study',0);
+
+            % Run ICA
+            if strcmpi(PromptICAAlgo, 'RUNICA')
+                % Algorithm 1: RUNICA (EEGLab default)
+                EEG = pop_runica(EEG, 'extended',1,'interupt','on','concatenate','on','icatype','runica','resave','off');
+
+                % Loop for saving the datasets
+                for files = 1:size(FileListSubj,1)
+                    %[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, size(FileListSubj,1) ,'retrieve',files,'study',0); 
+                    pop_saveset(EEG(files), 'filename',ICAFileNames{files},'filepath',ExportPath_toICA);
+                end
+            else
+                % Merging all datasets 
+
+                % PROBLEM HERE: size of eegdata and icaact does not match
+                % anymore! What happens with the concatenation? need to
+                % investigate !! 
+
+                OUTEEG = pop_mergeset(ALLEEG,1:length(ALLEEG),0);
+
+                % Reshaping data (taken from pop_runica) 
+                % compute total data size
+                totalpnts = 0;
+                for i = 1:length(ALLEEG)
+                    totalpnts = totalpnts+ALLEEG(i).pnts*ALLEEG(i).trials;
+                end
+                OUTEEG.data = zeros(ALLEEG(1).nbchan, totalpnts);
+
+                % Recompute data
+                cpnts = 1;
+                for i = 1:length(ALLEEG)
+                    tmplen = ALLEEG(i).pnts*ALLEEG(i).trials;
+                    TMP = eeg_checkset(ALLEEG(i), 'loaddata');
+                    OUTEEG.data(:,cpnts:cpnts+tmplen-1) = reshape(TMP.data, size(TMP.data,1), size(TMP.data,2)*size(TMP.data,3));
+                    cpnts = cpnts+tmplen;
+                end
+                OUTEEG.icaweights = [];
+                OUTEEG.trials = 1;
+                OUTEEG.pnts   = size(OUTEEG.data,2);
+
+                % Check set
+                OUTEEG = eeg_checkset(OUTEEG); 
+
+                % Algorithm 2: AMICA (Best one so far)
+                [W,S,mods] = runamica15(OUTEEG.data,'outdir',[ExportPath_toICA '\AmicaResults\']); 
+
+                % Storing amica results in EEG structure
+                % Loop for saving the datasets
+                for files = 1:size(FileListSubj,1)
+                    EEG(files).icaweights = W;
+                    EEG(files).icasphere = S(1:size(W,1),:);
+                    EEG(files).icawinv = mods.A(:,:,1);
+                    EEG(files).mods = mods;
+
+                    % Recompute the matrix of ICA components activations
+                    EEG(files) = eeg_checkset(EEG(files), 'loaddata'); % loading the EEG.data matrix
+                    EEG(files).icaact = (EEG(files).icaweights*EEG(files).icasphere)*EEG(files).data(EEG(files).icachansind,:);
+                    EEG(files).icaact = reshape(EEG(files).icaact, size(EEG(files).icaact,1), EEG(files).pnts, EEG(files).trials);
+
+                    % Save the datasets
+                    pop_saveset(EEG(files),'filename',ICAFileNames{files},'filepath',ExportPath_toICA);
+                end
+            end
+
+        % NOT MERGING DATASETS    
         else
-            % Merging all datasets 
-            
-            % PROBLEM HERE: size of eegdata and icaact does not match
-            % anymore! What happens with the concatenation? need to
-            % investigate !! 
-            
-            OUTEEG = pop_mergeset(ALLEEG,1:length(ALLEEG),0);
-            
-            % Reshaping data (taken from pop_runica) 
-            % compute total data size
-            totalpnts = 0;
-            for i = 1:length(ALLEEG)
-                totalpnts = totalpnts+ALLEEG(i).pnts*ALLEEG(i).trials;
-            end
-            OUTEEG.data = zeros(ALLEEG(1).nbchan, totalpnts);
-    
-            % Recompute data
-            cpnts = 1;
-            for i = 1:length(ALLEEG)
-                tmplen = ALLEEG(i).pnts*ALLEEG(i).trials;
-                TMP = eeg_checkset(ALLEEG(i), 'loaddata');
-                OUTEEG.data(:,cpnts:cpnts+tmplen-1) = reshape(TMP.data, size(TMP.data,1), size(TMP.data,2)*size(TMP.data,3));
-                cpnts = cpnts+tmplen;
-            end
-            OUTEEG.icaweights = [];
-            OUTEEG.trials = 1;
-            OUTEEG.pnts   = size(OUTEEG.data,2);
-            
-            % Check set
-            OUTEEG = eeg_checkset(OUTEEG); 
-            
-            % Algorithm 2: AMICA (Best one so far)
-            [W,S,mods] = runamica15(OUTEEG.data,'outdir',[ExportPath_toICA '\AmicaResults\']); 
-
-            % Storing amica results in EEG structure
-            % Loop for saving the datasets
             for files = 1:size(FileListSubj,1)
-                EEG(files).icaweights = W;
-                EEG(files).icasphere = S(1:size(W,1),:);
-                EEG(files).icawinv = mods.A(:,:,1);
-                EEG(files).mods = mods;
-                
-                % Recompute the matrix of ICA components activations
-                EEG(files) = eeg_checkset(EEG(files), 'loaddata'); % loading the EEG.data matrix
-                EEG(files).icaact = (EEG(files).icaweights*EEG(files).icasphere)*EEG(files).data(EEG(files).icachansind,:);
-                EEG(files).icaact = reshape(EEG(files).icaact, size(EEG(files).icaact,1), EEG(files).pnts, EEG(files).trials);
-                
-                % Save the datasets
-                pop_saveset(EEG(files), 'filename',ICAFileNames{files},'filepath',ExportPath_toICA);
+                % Create names of icaed datasets
+                ICAFileNames(files) = {[FileListSubj(files).name(1:end-length(epoched_extension)),extension]};
+
+                % Loading dataset   
+                [ALLEEG EEG] = pop_loadset('filename',FileListSubj(files).name,'filepath',FullPath_toICA); 
+                [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG,1,'retrieve',1 ,'study',0);
+
+                % Run ICA
+                if strcmpi(PromptICAAlgo, 'RUNICA')
+                    % Algorithm 1: RUNICA (EEGLab default)
+                    EEG = pop_runica(EEG, 'extended',1,'interupt','on','icatype','runica','resave','off');
+
+                    % Loop for saving the dataset
+                    pop_saveset(EEG, 'filename',ICAFileNames{files},'filepath',ExportPath_toICA);
+                else
+
+                    % Algorithm 2: AMICA (Best one so far)
+                    [W,S,mods] = runamica15(EEG.data,'outdir',[ExportPath_toICA '\AmicaResults\']); 
+
+                    % Storing amica results in EEG structure
+                    EEG.icaweights = W;
+                    EEG.icasphere = S(1:size(W,1),:);
+                    EEG.icawinv = mods.A(:,:,1);
+                    EEG.mods = mods;
+
+                    % Recompute the matrix of ICA components activations
+                    EEG = eeg_checkset(EEG, 'loaddata'); % loading the EEG.data matrix
+                    EEG.icaact = (EEG.icaweights*EEG.icasphere)*EEG.data(EEG.icachansind,:);
+                    EEG.icaact = reshape(EEG.icaact, size(EEG.icaact,1), EEG.pnts, EEG.trials);
+
+                    % Save the datasets
+                    pop_saveset(EEG, 'filename',ICAFileNames{files},'filepath',ExportPath_toICA);
+                end
             end
         end
     end
