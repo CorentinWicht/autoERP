@@ -379,11 +379,10 @@ for Count = 1:numel(FolderList)
 
         %% REJECTING COMPONENTS
 
-
         % Only when first file of concatenated sets
         % Otherwise rejection applied to all concatenated sets (same
         % components!)
-        if File
+        if File || ~strcmpi(merge_ans,'Y')
 
             % Initialize the analysis for each data
             Restart=0;
@@ -460,8 +459,8 @@ for Count = 1:numel(FolderList)
                 waitfor(p)
 
                 % Saving the changes
-                if nnz(cell2mat(CompList))>0
-                    CompsToRej{Count} = find(cell2mat(CompList)~=0)';
+                if nnz(cell2mat(CompList(:,2)))>0
+                    CompsToRej{Count} = find(cell2mat(CompList(:,2))~=0)';
                     RemainPfav = sum(PVaf)-sum(PVaf(CompsToRej{Count}));
                 else
                     CompsToRej{Count} = find(cell2mat(Response)==1)';
