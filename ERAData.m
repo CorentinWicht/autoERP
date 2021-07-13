@@ -3,15 +3,12 @@
 
 %% Authors
 
-% Corentin Wicht (script, protocol)
+% Author: Corentin Wicht, LNS, 2021
+% - corentin.wicht@unifr.ch
+% - https://github.com/CorentinWicht
 
-% If you have questions or want to contribute to this pipeline, feel free 
-% to contact corentin.wicht@unifr.ch
-
-% TO DO:
-
-% - NEED TO ADD THE INTERPOLATION !!!!!!
-
+% This work is licensed under a Creative Commons Attribution-NonCommercial
+% 4.0 International License (CC BY-NC)
 %% --------------------- PRESS F5 -------------------- %%
 %% --------------------------------------------------- %%
  clear variables; close all
@@ -136,12 +133,16 @@ if sum(~cellfun('isempty',(DesignList(:,1))))>3 % if design is specified
     e.visible = 1; % If you want Excel visible.
 
     % Message box stoping code execution
-%     MessageBox('The code will continue once you press OK','Wait for user input',30,250,70)
+    MessageBox('The code will continue once you press OK','Wait for user input',30,250,70)
 
     % edit sheet
-    eF.Save;
-    eF.Close; % close the file
-    e.Quit; % close Excel entirely
+    try
+        eF.Save;
+        eF.Close; % close the file
+        e.Quit; % close Excel entirely
+    catch
+        disp('You closed the excel file before clicking OK on the message box.')
+    end
 
     % Load the data and then delete the excel file
     Unblinding = readcell([save_folder '\IndividualUnblinding.xlsx']);
