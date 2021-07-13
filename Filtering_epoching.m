@@ -515,7 +515,7 @@ for sbj = 1:numel(FileList)
         if interpolation_ans == 'Y' % If you want to interpolate
             clear ChansToRej
             Pos = find(ismember(InterpTable(:,1),name_noe));
-            if ~isempty(InterpTable{Pos,2})
+            if any(~cellfun('isempty',InterpTable(Pos,2:end)))
                 if isnumeric(InterpTable{Pos,2}) % If channels numbers
                     ChansToRej = cell2mat(InterpTable(Pos,2:end));
                     ChansToRej = ChansToRej(~isnan(ChansToRej)); % Removing NaNs
