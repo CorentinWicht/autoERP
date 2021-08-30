@@ -190,12 +190,12 @@ for File = 1:length(FileList)
         for m=1:EEG.BadChans.nbchan
             if ~ismember(m,EEG.BadChans.InterpChans) 
                Temp(m,:,:) = EEG.data(PosGood,:,:); PosGood = PosGood + 1;
-            else
-                if m~=48 && m~=128 % Special case with reference electrode that requires interpolation
-                    % Restricting channel data length since EEG.data
-                    % size might have changed with artifact rejection
-                    Temp(m,:,:) = EEG.BadChans.data(PosBad,:,:);PosBad = PosBad + 1;
-                end
+%             else
+%                 if m~=48 && m~=128 % Special case with reference electrode that requires interpolation
+%                     % Restricting channel data length since EEG.data
+%                     % size might have changed with artifact rejection
+%                     Temp(m,:,:) = EEG.BadChans.data(PosBad,:,1:size(Temp,3));PosBad = PosBad + 1;
+%                 end
             end
         end
 
@@ -219,6 +219,8 @@ for File = 1:length(FileList)
         
         % Finding the trials corresponding to "Trial type/Trigger"
         TrialIdx = strcmpi({EEG.event.type},CompList{Comp,2});
+        Epochs = cell2mat({EEG.event.epoch});
+        TrialIdx = unique(Epochs(TrialIdx));
         
         % Determining electrodes of interest
         % if provided as numbers
